@@ -80,6 +80,21 @@ html.${OK_CLASS} main.main-surface {
     var(--ok-art) center / cover no-repeat !important;
 }
 
+/* 侧边栏:显式按主题 panel 色上色(token 不够、且 color-scheme 会让 Codex 用原生侧栏,故必须显式) */
+html.${OK_CLASS} aside.app-shell-left-panel {
+  background: var(--ok-panel) !important;
+  border-right: 1px solid var(--ok-line) !important;
+}
+html.${OK_CLASS} aside.app-shell-left-panel nav { background: transparent !important; }
+html.${OK_CLASS} aside.app-shell-left-panel button:hover {
+  background: color-mix(in srgb, var(--ok-accent) 15%, transparent) !important;
+}
+html.${OK_CLASS} aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
+html.${OK_CLASS} aside.app-shell-left-panel [aria-current="page"] {
+  background: color-mix(in srgb, var(--ok-accent) 20%, transparent) !important;
+  box-shadow: inset 3px 0 var(--ok-accent) !important;
+}
+
 /* 对话页(有 data-turn-key 回合节点):不铺壁纸,纯主题实色工作区,保证文字/代码绝对可读(方案 A)。
    主题色仍在(token 全局),壁纸只留给首页。 */
 html.${OK_CLASS} main.main-surface:has([data-turn-key]) {
