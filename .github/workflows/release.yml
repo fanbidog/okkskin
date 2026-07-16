@@ -1,0 +1,27 @@
+name: Release
+
+# 在 GitHub 上"创建 Release"(打 tag,如 v0.1.0)即触发发布到 npm。
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write   # provenance 需要(生成可验证的发布来源证明)
+
+jobs:
+  publish:
+    # 用 macOS runner:测试里的图片净化依赖 sips(仅 macOS),这样 node --test 能过
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Test
+        run: node --test
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
