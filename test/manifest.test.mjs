@@ -12,8 +12,8 @@ function make(payload) {
 }
 const goodPayload = {
   skinId: "purple-night", version: 3, variant: "dark",
-  themeUrl: "https://cdn.jsdelivr.net/gh/okkmax/codex-skins@abc/skins/purple-night/theme.json",
-  themeSri: "sha384-x", imageUrl: "https://cdn.jsdelivr.net/gh/okkmax/codex-skins@abc/skins/purple-night/bg.jpg",
+  themeUrl: "https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@abc/skins/purple-night/theme.json",
+  themeSri: "sha384-x", imageUrl: "https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@abc/skins/purple-night/bg.jpg",
   imageMirror: "", imageSri: "sha384-y",
 };
 

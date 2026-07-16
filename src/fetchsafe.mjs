@@ -1,7 +1,7 @@
 // 完整路径前缀白名单:只认我们仓库、且 ref 必须是钉死的(40 位十六进制 commit 或 tag),不接受 @main
 export const ALLOWED_PREFIXES = [
-  /^https:\/\/cdn\.jsdelivr\.net\/gh\/okkmax\/codex-skins@[0-9a-f]{7,40}\//,
-  /^https:\/\/cdn\.jsdelivr\.net\/gh\/okkmax\/codex-skins@v[0-9][0-9A-Za-z.\-]*\//,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/fanbidog\/codex-skins@[0-9a-f]{7,40}\//,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/fanbidog\/codex-skins@v[0-9][0-9A-Za-z.\-]*\//,
 ];
 
 export function assertAllowedUrl(url) {

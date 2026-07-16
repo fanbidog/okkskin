@@ -17,7 +17,7 @@ okkskin status | restore | doctor
 ```
 
 `<manifest URL>` 是从 OkkMax 换肤画廊复制的完整钉死链接
-`https://cdn.jsdelivr.net/gh/okkmax/codex-skins@<ref>/skins/<id>/manifest.json`;
+`https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@<ref>/skins/<id>/manifest.json`;
 CLI 会验 ed25519 签名 manifest、按 SRI 校验 theme JSON 与背景图、净化图片(强制转码),再注入。
 
 ## 原理

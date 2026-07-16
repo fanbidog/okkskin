@@ -26,8 +26,8 @@ const imgBytes = fs.readFileSync(path.join(here, "fixtures", "real.jpg"));
 
 function manifestFor(themeSri, imageSri, version = 1) {
   const payload = { skinId: "x", version, variant: "dark",
-    themeUrl: "https://cdn.jsdelivr.net/gh/okkmax/codex-skins@abc123/skins/x/theme.json",
-    themeSri, imageUrl: "https://cdn.jsdelivr.net/gh/okkmax/codex-skins@abc123/skins/x/bg.jpg",
+    themeUrl: "https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@abc123/skins/x/theme.json",
+    themeSri, imageUrl: "https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@abc123/skins/x/bg.jpg",
     imageMirror: "", imageSri };
   const sig = crypto.sign(null, Buffer.from(canonical(payload)), privateKey).toString("base64");
   return { payload, sig };
