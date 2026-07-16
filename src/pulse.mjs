@@ -66,10 +66,10 @@ async function openInspector(pid, port = 9229, timeoutMs = 8000) {
 }
 
 /**
- * 脉冲:SIGUSR1 开 inspector → 在主进程 eval 表达式 → 关闭 inspector(_debugEnd)。
+ * 单次脉冲:开 inspector → 在主进程 eval 表达式 → 关闭 inspector(_debugEnd)。
  * 端口只在这几百毫秒内开着。返回表达式的值。
  */
-export async function pulse(expr, { awaitPromise = false } = {}) {
+async function pulseOnce(expr, { awaitPromise = false } = {}) {
   const pid = findCodexMainPid();
   if (!pid) throw new Error("Codex 未运行");
   const wsUrl = await openInspector(pid);
@@ -78,7 +78,7 @@ export async function pulse(expr, { awaitPromise = false } = {}) {
   const send = (method, params = {}) => new Promise((res, rej) => {
     const i = ++id; pend.set(i, { res, rej });
     ws.send(JSON.stringify({ id: i, method, params }));
-    setTimeout(() => { if (pend.delete(i)) rej(new Error("inspector 超时: " + method)); }, 10000);
+    setTimeout(() => { if (pend.delete(i)) rej(new Error("inspector 超时: " + method)); }, 6000);
   });
   await new Promise((res, rej) => {
     ws.addEventListener("open", res, { once: true });
@@ -105,4 +105,21 @@ export async function pulse(expr, { awaitPromise = false } = {}) {
   try { ws.close(); } catch { /* ignore */ }
   if (err) throw err;
   return value;
+}
+
+/**
+ * 脉冲(带重试):首次注入偶发 inspector 未就绪 / evaluate 超时,自动重试。
+ * 注入表达式是幂等的(装钩子有 guard、置变量),重试安全。
+ */
+export async function pulse(expr, opts = {}) {
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try { return await pulseOnce(expr, opts); }
+    catch (e) {
+      lastErr = e;
+      if (/Codex 未运行/.test(e.message)) throw e; // Codex 没开,重试无意义
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  }
+  throw lastErr;
 }
