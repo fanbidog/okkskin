@@ -1,0 +1,10 @@
+{
+  "name": "okkskin",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "okkskin": "bin/okkskin.mjs" },
+  "engines": { "node": ">=20" },
+  "files": ["bin", "src", "LICENSE", "NOTICE"],
+  "scripts": { "test": "node --test" },
+  "license": "MIT"
+}
