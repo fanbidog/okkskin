@@ -38,3 +38,8 @@ node bin/okkskin.mjs restore
 
 ## 已验证结论(2026-07-16)
 apply / status / watcher 自杀 / 端口随 Codex 关 / restore 收尾 —— 全部通过。皮肤为壁纸 + CSS 变量配色,无品牌 chrome。
+
+## Phase 2 — 信任链 e2e(2026-07-16)
+- 签名主题 resolveFromParts:正常通过;篡改图/篡改 theme/回滚 **全部被拒**(image/theme SRI mismatch、rollback)。
+- 离线 sign-manifest.mjs 签名 ↔ CLI verifyManifest 交叉验证一致(canonical 字段序不漂移)。
+- 真机 apply 签名主题(本地目录路径)→ 换肤生效、Task 6 未回归 → restore 关口还原。
