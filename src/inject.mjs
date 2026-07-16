@@ -71,19 +71,29 @@ html.${OK_CLASS}{
 }
 
 /* 唯一结构性规则:主区铺壁纸(token 覆盖不了背景图);scrim 用 --ok-bg 上色,明暗自适应 */
-html.${OK_CLASS} body { background: var(--ok-bg) !important; }
-html.${OK_CLASS} ::selection { background: color-mix(in srgb, var(--ok-accent) 32%, transparent); }
-html.${OK_CLASS} { scrollbar-color: color-mix(in srgb, var(--ok-text) 26%, transparent) transparent; }
-html.${OK_CLASS} main.main-surface {
+/* 壁纸铺到整窗(body),侧栏+主区共享同一张连续壁纸 → 消除撕裂感 */
+html.${OK_CLASS} body {
   background:
     linear-gradient(color-mix(in srgb, var(--ok-bg) 55%, transparent), color-mix(in srgb, var(--ok-bg) 70%, transparent)),
-    var(--ok-art) center / cover no-repeat !important;
+    var(--ok-art) center / cover no-repeat fixed !important;
+}
+html.${OK_CLASS} ::selection { background: color-mix(in srgb, var(--ok-accent) 32%, transparent); }
+html.${OK_CLASS} { scrollbar-color: color-mix(in srgb, var(--ok-text) 26%, transparent) transparent; }
+/* 主区铺同一张 fixed 壁纸 + 同一层蒙层 → 和侧栏拼成一张连续图,无缝 */
+html.${OK_CLASS} main.main-surface {
+  background:
+    linear-gradient(color-mix(in srgb, var(--ok-bg) 50%, transparent), color-mix(in srgb, var(--ok-bg) 64%, transparent)),
+    var(--ok-art) center / cover no-repeat fixed !important;
 }
 
 /* 侧边栏:显式按主题 panel 色上色(token 不够、且 color-scheme 会让 Codex 用原生侧栏,故必须显式) */
 html.${OK_CLASS} aside.app-shell-left-panel {
-  background: var(--ok-panel) !important;
-  border-right: 1px solid var(--ok-line) !important;
+  /* 侧栏直接铺同一张 fixed 壁纸 + 同一层蒙层(不依赖 backdrop-filter/透明背景)→ 与主区连续无缝 */
+  background:
+    linear-gradient(color-mix(in srgb, var(--ok-bg) 82%, transparent), color-mix(in srgb, var(--ok-bg) 91%, transparent)),
+    var(--ok-art) center / cover no-repeat fixed !important;
+  border-right: 1px solid color-mix(in srgb, var(--ok-line) 45%, transparent) !important;
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--ok-bg) 78%, transparent);
 }
 html.${OK_CLASS} aside.app-shell-left-panel nav { background: transparent !important; }
 html.${OK_CLASS} aside.app-shell-left-panel button:hover {

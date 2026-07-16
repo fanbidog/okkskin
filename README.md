@@ -1,36 +1,38 @@
 # okkskin
 
-Apply OkkMax skins to the Codex desktop app via local CDP injection.
+给 Codex 桌面端(macOS)换肤 —— 整套界面配色 + 壁纸,通过一次本地「inspector 脉冲」注入:**不改任何 app 文件、不常开调试口**。
 
-## Usage
-
-```bash
-npx okkskin@0.1.0 apply <gallery-url>
-```
-
-`<gallery-url>` is the full, pinned `https://cdn.jsdelivr.net/gh/okkmax/codex-skins@<ref>/skins/<id>/manifest.json`
-URL copied from the OkkMax skin gallery. The CLI verifies the ed25519-signed manifest, checks the
-theme JSON and background image against their SRI hashes, sanitizes the image (mandatory transcode),
-and injects the theme into Codex.
-
-To undo:
+## 用法
 
 ```bash
-okkskin restore
+# 一次性(当前会话,退出即失)
+okkskin apply <主题目录 | 钉死的 manifest URL>
+
+# 持久(退出/Dock 重开自动恢复,装一个登录级常驻 agent)
+okkskin enable <主题目录 | 钉死的 manifest URL>
+okkskin disable        # 停用常驻 + 移除皮肤
+
+# 其它
+okkskin status | restore | doctor
 ```
 
-## ⚠️ CDP risk notice
+`<manifest URL>` 是从 OkkMax 换肤画廊复制的完整钉死链接
+`https://cdn.jsdelivr.net/gh/okkmax/codex-skins@<ref>/skins/<id>/manifest.json`;
+CLI 会验 ed25519 签名 manifest、按 SRI 校验 theme JSON 与背景图、净化图片(强制转码),再注入。
 
-`okkskin apply` works by launching the Codex desktop app with the Chrome DevTools Protocol (CDP)
-debugging port **open**, and it stays open for as long as the skinned session runs. While that port
-is open, **any local process can drive or inspect the Codex app** through it.
+## 原理
 
-- Use `okkskin` **only on a personal, trusted machine** — never on shared, multi-user, or untrusted hosts.
-- The debugging port is open for the whole skinned session, not just during injection.
-- Run `okkskin restore` to close it and return Codex to its normal, un-debugged state.
+对运行中的 Codex 主进程发一次 inspector 脉冲(`SIGUSR1` / `process._debugProcess`)→
+经 `webContents.executeJavaScript` 向渲染进程注入主题 CSS + 挂 `dom-ready` 重注钩子 →
+`process._debugEnd` 立即关闭 inspector 端口。配色来自**覆盖 Codex 自身的设计 token**;
+首页铺壁纸,对话页用主题实色底保证可读。**不碰 app.asar、不破坏代码签名。**
 
-Only apply skins from sources you trust; the trust anchor is the ed25519 public key built into this CLI.
+## 安全
 
-## Attribution
+Node inspector 仅在注入那 ~1 秒于 `127.0.0.1` 打开,随即关闭 —— **不在整会话期间保持开放**。
+仍建议仅在**个人可信设备**使用。`okkskin disable` / `restore` 可完全移除。
 
-Portions of this implementation are derived from **Codex-Dream-Skin** (MIT).
+## 致谢
+
+思路最初受 [Codex-Dream-Skin](https://github.com/Fei-Away/Codex-Dream-Skin)(MIT)启发;
+本实现为原创(inspector 脉冲 + 设计 token 覆盖),非其分支。非 OpenAI 官方产品。

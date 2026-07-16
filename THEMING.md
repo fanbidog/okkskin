@@ -37,8 +37,11 @@
 
 ## 皮肤怎么套(engine 自动,作者不用管)
 
-- **token 覆盖**:重写 Codex 自己的设计 token(`--color-*` / `--codex-base-*`)→ 整个界面的文字/图标/边框/按钮/面板/次级按钮/选中/滚动条随之统一重上色。不逐元素 hack。
-- **首页**:`main.main-surface` 铺壁纸 + `--ok-bg` 蒙层(蒙层用 background 上色,深压暗、浅提亮,明暗自适应)。
+**注入方式**:对运行中的 Codex 主进程发一次「inspector 脉冲」(`SIGUSR1`/`process._debugProcess` → `webContents.executeJavaScript` 注入 + `dom-ready` 重注钩子 → `process._debugEnd` 关口)。不改 app 文件、调试口只开注入那一瞬。持久靠常驻 agent(`enable`),每次 Codex 启动脉冲一次。
+
+**上色规则**:
+- **token 覆盖**:重写 Codex 自己的设计 token(`--color-*` / `--codex-base-*`)→ 整个界面文字/图标/边框/按钮/次级按钮/选中/滚动条统一重上色。不逐元素 hack。
+- **壁纸(首页)**:整窗一张连续壁纸 —— `body` 铺 `fixed` 壁纸 + `--ok-bg` 蒙层;**侧栏也铺同一张 fixed 壁纸**(蒙层更浓保证菜单可读)→ 侧栏与主区无缝、无暗块。
 - **对话页**(`main.main-surface:has([data-turn-key])`):纯 `--ok-bg` 实色、不铺壁纸 → 保证长对话/表格/行内代码可读(方案 A)。
 - **代码块**:遵循 Codex 自身,不覆盖(保语法高亮可读)。
 - **弹窗/下拉/菜单/toast/横幅**:强制不透明,防穿帮。

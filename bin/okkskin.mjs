@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 const [cmd, ...args] = process.argv.slice(2);
-const COMMANDS = new Set(["apply", "status", "stop", "restore", "doctor"]);
+const COMMANDS = new Set(["apply", "status", "stop", "restore", "doctor", "enable", "disable"]);
 
 async function main() {
   if (!cmd || !COMMANDS.has(cmd)) {
-    console.error("usage: okkskin <apply|status|stop|restore|doctor> [args]");
+    console.error("usage: okkskin <apply|enable|disable|status|stop|restore|doctor> [args]");
     process.exit(2);
   }
   const mod = await import(`../src/commands/${cmd}.mjs`);

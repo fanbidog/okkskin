@@ -1,14 +1,12 @@
-import { readState, clearState } from "../state.mjs";
-import { killWatcher } from "../proc.mjs";
-import { findCodexBundle } from "../codex.mjs";
-import { quitCodex, launchCodexNormally } from "../launch.mjs";
+import { clearState } from "../state.mjs";
+import { findCodexMainPid, pulse } from "../pulse.mjs";
+import { RESTORE_EXPR } from "../engine.mjs";
 
 export async function run() {
-  const s = readState();
-  if (s?.watcherPid) killWatcher(s.watcherPid);
-  quitCodex();
-  await new Promise((r) => setTimeout(r, 1500));
-  launchCodexNormally(findCodexBundle().bundlePath); // 无调试口重启 → 关闭 CDP、皮肤消失
+  if (findCodexMainPid()) {
+    try { await pulse(RESTORE_EXPR); }
+    catch (e) { console.warn("okkskin: 还原脉冲未完成(Codex 可能正在关闭):" + e.message); }
+  }
   clearState();
-  console.log("okkskin: restored (debug port closed, Codex relaunched normally).");
+  console.log("okkskin: 已还原(移除皮肤,调试口已关,未重启 Codex)");
 }

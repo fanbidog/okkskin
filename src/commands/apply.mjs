@@ -2,60 +2,43 @@ import fs from "node:fs";
 import path from "node:path";
 import { loadLocalTheme } from "../theme.mjs";
 import { resolveRemoteTheme } from "../remote.mjs";
-import { lastManifestVersion, recordManifestVersion } from "../state.mjs";
+import { lastManifestVersion, recordManifestVersion, writeState } from "../state.mjs";
 import { findCodexBundle, verifyCodexSignature } from "../codex.mjs";
-import { randomPort, quitCodex, launchCodexWithCdp, waitForCdp } from "../launch.mjs";
-import { listCodexTargets } from "../cdp.mjs";
-import { readState, writeState, clearState } from "../state.mjs";
-import { killWatcher, spawnWatcher } from "../proc.mjs";
-import { execFileSync } from "node:child_process";
+import { launchCodexNormally } from "../launch.mjs";
+import { findCodexMainPid, pulse } from "../pulse.mjs";
+import { rendererInjectJS, readImageB64, mimeForTheme, buildApplyExpr } from "../engine.mjs";
 
-const MANIFEST_BASE = "https://cdn.jsdelivr.net/gh/okkmax/codex-skins"; // ref 由发布流程钉,见下
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function resolveTheme(target) {
-  if (target.startsWith("https://")) {
-    return resolveRemoteTheme(target, lastManifestVersion);
-  }
-  if (fs.existsSync(path.resolve(target)) && fs.statSync(path.resolve(target)).isDirectory()) {
-    return loadLocalTheme(path.resolve(target)); // 本地目录(Phase 1 路径,开发/自测用)
-  }
-  // slug:按约定拼 manifest URL(ref 占位,发布时由生成的命令带全 URL 更稳)
-  throw new Error(`slug resolution needs a pinned manifest URL; pass the full https URL from the gallery`);
+  if (target.startsWith("https://")) return resolveRemoteTheme(target, lastManifestVersion);
+  const abs = path.resolve(target);
+  if (fs.existsSync(abs) && fs.statSync(abs).isDirectory()) return loadLocalTheme(abs);
+  throw new Error("slug 需从画廊取钉死 manifest URL;请传完整 https URL 或本地主题目录");
+}
+
+// 等 Codex 主进程 + 窗口就绪(SIGUSR1 需要主进程在跑、窗口已建)
+async function ensureCodexReady() {
+  const codex = findCodexBundle();
+  if (!verifyCodexSignature(codex.bundlePath)) throw new Error("Codex 签名校验未通过,拒绝注入");
+  if (findCodexMainPid()) return;
+  launchCodexNormally(codex.bundlePath); // 正常启动,不带调试口、不重启
+  for (let i = 0; i < 40 && !findCodexMainPid(); i++) await sleep(500);
+  if (!findCodexMainPid()) throw new Error("Codex 未能启动");
+  await sleep(3500); // 等窗口/渲染就绪
 }
 
 export async function run(args) {
   const target = args[0];
-  if (!target) throw new Error("usage: okkskin apply <theme-dir>");
+  if (!target) throw new Error("用法: okkskin apply <主题目录|URL>");
   const theme = await resolveTheme(target);
-  const skinId = theme.id;
 
-  // 落地为稳定本地主题目录(watcher 重注要复用)
-  const applied = path.join(process.env.HOME, "Library/Application Support/okkskin/current");
-  fs.rmSync(applied, { recursive: true, force: true });
-  fs.mkdirSync(applied, { recursive: true });
-  fs.copyFileSync(theme.imagePath, path.join(applied, "bg.jpg"));
-  fs.writeFileSync(path.join(applied, "theme.json"), JSON.stringify({
-    schemaVersion: 1, id: theme.id, name: theme.name, variant: theme.variant,
-    image: "bg.jpg", colors: theme.colors,
-  }));
+  await ensureCodexReady();
 
-  const prev = readState();
-  if (prev?.watcherPid) killWatcher(prev.watcherPid); // 换主题:先停旧 watcher
+  const rjs = rendererInjectJS(theme, readImageB64(theme), mimeForTheme(theme));
+  await pulse(buildApplyExpr(rjs)); // SIGUSR1 脉冲:装钩子 + 立即注入 + 关口
 
-  const codex = findCodexBundle();
-  if (!verifyCodexSignature(codex.bundlePath)) throw new Error("Codex signature invalid — refusing to inject");
-
-  const port = randomPort();
-  quitCodex();
-  await new Promise((r) => setTimeout(r, 1500));
-  launchCodexWithCdp(codex.bundlePath, port);
-  if (!(await waitForCdp(port))) { clearState(); throw new Error("Codex CDP did not come up"); }
-
-  const targets = await listCodexTargets(port);
-  const codexPid = Number(execFileSync("/usr/bin/pgrep", ["-n", "-x", "ChatGPT"], { encoding: "utf8" }).trim());
-  const watcherPid = spawnWatcher(port, applied, codexPid);
-  writeState({ codexPid, watcherPid, port, skinId, startedAt: new Date().toISOString() });
-  if (theme.version) recordManifestVersion(skinId, theme.version);
-  console.log(`okkskin: applied ${skinId} (port ${port}). Run 'okkskin restore' to remove & close the debug port.`);
-  console.log("⚠ Codex debug port is open while it runs; use only on a personal, trusted machine.");
+  writeState({ codexPid: findCodexMainPid(), skinId: theme.id, startedAt: new Date().toISOString() });
+  if (theme.version) recordManifestVersion(theme.id, theme.version);
+  console.log(`okkskin: 已套用 ${theme.id}(脉冲注入,调试口已关闭)。刷新/切页面会自动保持。还原:okkskin restore`);
 }

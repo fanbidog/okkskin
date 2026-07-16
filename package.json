@@ -1,7 +1,7 @@
 {
   "name": "okkskin",
   "version": "0.1.0",
-  "description": "Apply OkkMax skins to the Codex desktop app via local CDP injection.",
+  "description": "Skin the Codex desktop app via a brief local inspector pulse (no app modification, no persistent debug port).",
   "type": "module",
   "bin": { "okkskin": "bin/okkskin.mjs" },
   "engines": { "node": ">=20" },
