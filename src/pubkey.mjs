@@ -2,5 +2,5 @@
 // 私钥永不进仓库;签 manifest 在离线机器上用 scripts/sign-manifest.mjs 完成。
 export const OKKSKIN_PUBKEY = process.env.OKKSKIN_PUBKEY_OVERRIDE ||
 `-----BEGIN PUBLIC KEY-----
-PLACEHOLDER_REPLACE_BEFORE_PUBLISH
+MCowBQYDK2VwAyEAsJliUf0LyLC2cS+pjBWf4jshxaiiPulvpvUeQX6sruw=
 -----END PUBLIC KEY-----`;
