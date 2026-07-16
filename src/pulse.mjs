@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 
 const BUNDLE_EXE = "/ChatGPT.app/Contents/MacOS/ChatGPT";
 
-// Codex 主进程 PID(comm 是主执行档且参数不含 --type=,排除 renderer/gpu 等 helper)
-export function findCodexMainPid() {
+// macOS: ps 过滤主执行档且参数不含 --type=(排除 renderer/gpu 等 helper)
+function findMainPidPosix() {
   let out;
   try { out = execFileSync("/bin/ps", ["-axo", "pid=,command="], { encoding: "utf8" }); }
   catch { return null; }
@@ -16,9 +16,44 @@ export function findCodexMainPid() {
   return null;
 }
 
-// SIGUSR1 打开主进程 node inspector,等 9229 就绪,返回 ws url
-async function openInspector(pid, port = 9229, timeoutMs = 8000) {
+// Windows: Win32_Process 带 CommandLine,挑不含 --type= 的 ChatGPT.exe 主进程。导出供测试。
+export function pickWinMainPid(json) {
+  let arr;
+  try { arr = JSON.parse(json); } catch { return null; }
+  if (!arr) return null;
+  if (!Array.isArray(arr)) arr = [arr];
+  for (const p of arr) {
+    const cmd = String(p.CommandLine || "");
+    if (cmd && !cmd.includes("--type=")) return Number(p.ProcessId);
+  }
+  return null;
+}
+function findMainPidWin() {
+  const cmd = "Get-CimInstance Win32_Process -Filter \"Name='ChatGPT.exe'\" | Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress";
+  let out;
+  try { out = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", cmd], { encoding: "utf8" }); }
+  catch { return null; }
+  return pickWinMainPid(out);
+}
+
+// Codex 主进程 PID(跨平台)
+export function findCodexMainPid() {
+  return process.platform === "win32" ? findMainPidWin() : findMainPidPosix();
+}
+
+// 触发目标进程打开 node inspector。process._debugProcess 跨平台
+// (POSIX 下等价于发 SIGUSR1,Windows 走 DebugActiveProcess);不可用时 POSIX 回退 SIGUSR1。
+function triggerInspector(pid) {
+  try {
+    if (typeof process._debugProcess === "function") { process._debugProcess(Number(pid)); return; }
+  } catch { /* fall through */ }
+  if (process.platform === "win32") throw new Error("无法开启 inspector:process._debugProcess 不可用");
   process.kill(pid, "SIGUSR1");
+}
+
+// 打开主进程 node inspector,等 9229 就绪,返回 ws url
+async function openInspector(pid, port = 9229, timeoutMs = 8000) {
+  triggerInspector(pid);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {

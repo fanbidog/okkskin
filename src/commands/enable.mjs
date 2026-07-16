@@ -1,19 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 import { loadLocalTheme } from "../theme.mjs";
 import { resolveRemoteTheme } from "../remote.mjs";
-import { lastManifestVersion, readState, writeState } from "../state.mjs";
+import { lastManifestVersion, readState, writeState, currentDir } from "../state.mjs";
 import { findCodexBundle, verifyCodexSignature } from "../codex.mjs";
 import { findCodexMainPid, pulse } from "../pulse.mjs";
 import { rendererInjectJS, readImageB64, mimeForTheme, buildApplyExpr } from "../engine.mjs";
+import { installAgent } from "../persist.mjs";
 
-const HOME = process.env.HOME;
-const STATE_DIR = path.join(HOME, "Library/Application Support/okkskin");
-const CURRENT = path.join(STATE_DIR, "current");
-const LABEL = "com.okkmax.okkskin";
-const PLIST = path.join(HOME, "Library/LaunchAgents", LABEL + ".plist");
+const CURRENT = currentDir();
 const AGENT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "agent.mjs");
 
 async function resolveTheme(target) {
@@ -35,42 +31,6 @@ function stage(theme) {
   }));
 }
 
-function writePlist() {
-  fs.mkdirSync(path.dirname(PLIST), { recursive: true });
-  const plist = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>${LABEL}</string>
-  <key>ProgramArguments</key><array>
-    <string>${process.execPath}</string>
-    <string>${AGENT}</string>
-  </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>${path.join(STATE_DIR, "agent.log")}</string>
-  <key>StandardErrorPath</key><string>${path.join(STATE_DIR, "agent.log")}</string>
-</dict></plist>`;
-  fs.writeFileSync(PLIST, plist);
-}
-
-function agentLoaded(uid) {
-  try { execFileSync("/bin/launchctl", ["print", `gui/${uid}/${LABEL}`], { stdio: "ignore" }); return true; }
-  catch { return false; }
-}
-
-// 幂等加载:已加载就 kickstart 重启(避免对已加载的 label 重复 bootstrap 报 EIO);未加载才 bootstrap;失败自愈重试。
-function loadAgent(uid) {
-  if (agentLoaded(uid)) {
-    try { execFileSync("/bin/launchctl", ["kickstart", "-k", `gui/${uid}/${LABEL}`], { stdio: "ignore" }); } catch { /* ignore */ }
-    return;
-  }
-  try { execFileSync("/bin/launchctl", ["bootstrap", `gui/${uid}`, PLIST]); return; }
-  catch {
-    try { execFileSync("/bin/launchctl", ["bootout", `gui/${uid}/${LABEL}`], { stdio: "ignore" }); } catch { /* ignore */ }
-    execFileSync("/bin/launchctl", ["bootstrap", `gui/${uid}`, PLIST]); // 再试一次,还失败就抛出
-  }
-}
-
 export async function run(args) {
   const target = args[0];
   if (!target) throw new Error("用法: okkskin enable <主题目录|URL>");
@@ -80,8 +40,7 @@ export async function run(args) {
 
   stage(theme);
   writeState({ skinId: theme.id, enabled: true, appliedPid: null, startedAt: new Date().toISOString() });
-  writePlist();
-  loadAgent(process.getuid());
+  installAgent(AGENT);
 
   // 若 Codex 正在跑,立即套一次(否则等它下次启动由 agent 套)
   if (findCodexMainPid()) {

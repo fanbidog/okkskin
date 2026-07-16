@@ -2,13 +2,12 @@
 // 逻辑:每几秒看一次 Codex 主进程;若出现了新进程(区别于上次已套的 pid)→ 脉冲套上已暂存的主题。
 // 不持有端口、不重启 Codex;仅在 Codex 新启动的那一下脉冲一次(注完即关口)。
 import { setTimeout as sleep } from "node:timers/promises";
-import path from "node:path";
 import { loadLocalTheme } from "./theme.mjs";
 import { findCodexMainPid, pulse } from "./pulse.mjs";
 import { rendererInjectJS, readImageB64, mimeForTheme, buildApplyExpr } from "./engine.mjs";
-import { readState, writeState } from "./state.mjs";
+import { readState, writeState, currentDir } from "./state.mjs";
 
-const CURRENT = path.join(process.env.HOME, "Library/Application Support/okkskin/current");
+const CURRENT = currentDir();
 
 async function tick() {
   const s = readState();

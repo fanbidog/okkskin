@@ -3,10 +3,13 @@ import os from "node:os";
 import path from "node:path";
 
 export function stateDir() {
-  return process.env.OKKSKIN_STATE_DIR
-    || path.join(os.homedir(), "Library", "Application Support", "okkskin");
+  if (process.env.OKKSKIN_STATE_DIR) return process.env.OKKSKIN_STATE_DIR;
+  if (process.platform === "win32")
+    return path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "okkskin");
+  return path.join(os.homedir(), "Library", "Application Support", "okkskin");
 }
 export function statePath() { return path.join(stateDir(), "state.json"); }
+export function currentDir() { return path.join(stateDir(), "current"); }
 
 export function readState() {
   try { return JSON.parse(fs.readFileSync(statePath(), "utf8")); }
