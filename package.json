@@ -7,5 +7,9 @@
   "engines": { "node": ">=20" },
   "files": ["bin", "src", "LICENSE", "NOTICE", "README.md"],
   "scripts": { "test": "node --test" },
+  "repository": { "type": "git", "url": "git+https://github.com/fanbidog/okkskin.git" },
+  "homepage": "https://github.com/fanbidog/okkskin#readme",
+  "bugs": { "url": "https://github.com/fanbidog/okkskin/issues" },
+  "keywords": ["codex", "theme", "skin", "electron", "macos", "cli"],
   "license": "MIT"
 }
