@@ -6,7 +6,8 @@ import { OK_CLASS, FIXED_CSS, themeToVars } from "./inject.mjs";
 function buildEvalExpression(theme, imageBase64, mime) {
   const vars = themeToVars(theme);
   // 只传「数据」:vars(已校验的颜色)、图片 base64、mime。逻辑固定。
-  const payload = JSON.stringify({ cls: OK_CLASS, css: FIXED_CSS, vars, img: imageBase64, mime });
+  const variant = theme.variant === "light" ? "light" : "dark";
+  const payload = JSON.stringify({ cls: OK_CLASS, css: FIXED_CSS, vars, img: imageBase64, mime, variant });
   return `(() => {
     const P = ${payload};
     const root = document.documentElement;
@@ -14,6 +15,7 @@ function buildEvalExpression(theme, imageBase64, mime) {
     if (!st) { st = document.createElement("style"); st.id = "okkskin-style"; document.head.appendChild(st); }
     st.textContent = P.css;
     for (const [k, v] of Object.entries(P.vars)) root.style.setProperty(k, v);
+    root.style.setProperty("color-scheme", P.variant);
     if (P.img) {
       const bin = Uint8Array.from(atob(P.img), c => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bin], { type: P.mime }));
