@@ -21,3 +21,13 @@ export function writeState(s) {
 export function clearState() {
   try { fs.unlinkSync(statePath()); } catch { /* already gone */ }
 }
+export function lastManifestVersion(skinId) {
+  const s = readState();
+  return (s && s.seenVersions && s.seenVersions[skinId]) || 0;
+}
+export function recordManifestVersion(skinId, version) {
+  const s = readState() || {};
+  s.seenVersions = s.seenVersions || {};
+  s.seenVersions[skinId] = version;
+  writeState(s);
+}
