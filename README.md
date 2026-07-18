@@ -91,6 +91,14 @@ https://www.okkmax.com/skins/<id>/manifest.json
 
 一个主题 = 6 个颜色 + 1 张壁纸 + 明暗标记,人工按图手配。详见 [THEMING.md](THEMING.md)。
 
+离线签名用 `scripts/author.mjs`(dev-only,不随 npm 包发布):读桌面私钥,把壁纸 + 6 色打成 `theme.json` / `bg.<ext>` / 已签名 `manifest.json`(URL 钉死 `www.okkmax.com`),产出到 `out/<id>/` 供后台上传。
+
+```bash
+node scripts/author.mjs --id road --name "山湖公路" --variant dark --image ~/wallpaper.jpg \
+  --bg "#0c1519" --panel "#10242b" --accent "#37b0c4" \
+  --text "#e9f3f4" --muted "#93b0b3" --line "rgba(55,176,196,.22)"
+```
+
 ## 致谢
 
 思路最初受 [Codex-Dream-Skin](https://github.com/Fei-Away/Codex-Dream-Skin)(MIT)启发;本实现为原创(inspector 脉冲 + 设计 token 覆盖),非其分支。
