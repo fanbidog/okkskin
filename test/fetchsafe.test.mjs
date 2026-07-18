@@ -2,6 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { assertAllowedUrl, readCapped, ALLOWED_PREFIXES } from "../src/fetchsafe.mjs";
 
+test("allows www.okkmax.com/skins/<id>/ (自托管主路径)", () => {
+  assert.doesNotThrow(() => assertAllowedUrl("https://www.okkmax.com/skins/road/manifest.json"));
+  assert.doesNotThrow(() => assertAllowedUrl("https://www.okkmax.com/skins/night-2/bg.webp"));
+});
+test("rejects okkmax outside /skins/ or bad id or apex/other subdomain", () => {
+  assert.throws(() => assertAllowedUrl("https://www.okkmax.com/evil/x.js"));
+  assert.throws(() => assertAllowedUrl("https://www.okkmax.com/skins/../x"));
+  assert.throws(() => assertAllowedUrl("https://okkmax.com/skins/road/manifest.json"));
+  assert.throws(() => assertAllowedUrl("https://evil.okkmax.com/skins/road/manifest.json"));
+});
 test("allows pinned fanbidog/codex-skins jsdelivr path", () => {
   assert.doesNotThrow(() => assertAllowedUrl("https://cdn.jsdelivr.net/gh/fanbidog/codex-skins@a1b2c3d/skins/x/bg.jpg"));
 });
