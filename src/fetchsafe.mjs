@@ -1,5 +1,7 @@
-// 完整路径前缀白名单:只认我们仓库、且 ref 必须是钉死的(40 位十六进制 commit 或 tag),不接受 @main
+// 完整路径前缀白名单。okkmax 自托管为主(固定路径,完整性靠签名 + version 防回滚);
+// jsDelivr 两条保留向后兼容(推特首发那批,ref 必须钉死的 commit/tag,不接受 @main)。
 export const ALLOWED_PREFIXES = [
+  /^https:\/\/www\.okkmax\.com\/skins\/[a-z0-9][a-z0-9-]{0,63}\//,
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/fanbidog\/codex-skins@[0-9a-f]{7,40}\//,
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/fanbidog\/codex-skins@v[0-9][0-9A-Za-z.\-]*\//,
 ];
