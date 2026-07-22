@@ -1,6 +1,6 @@
 {
   "name": "okkskin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Skin the Codex desktop app via a brief local inspector pulse (no app modification, no persistent debug port).",
   "type": "module",
   "bin": { "okkskin": "bin/okkskin.mjs" },

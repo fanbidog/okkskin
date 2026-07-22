@@ -31,7 +31,9 @@ function findMacBundle() {
 
 /* ───────── Windows(Store Appx: OpenAI.Codex) ───────── */
 function winAppx() {
-  const ps = "$p=Get-AppxPackage OpenAI.Codex | Select-Object -First 1; if($p){[pscustomobject]@{Loc=$p.InstallLocation;Sig=$p.SignatureKind}|ConvertTo-Json -Compress}";
+  // Sig 必须 [string] 强转:Windows PowerShell 5.1 的 ConvertTo-Json 会把枚举序列化成数字(Store=3),
+  // 不转的话 Node 侧 info.Sig 会是 3 而非 "Store",导致签名校验永远失败。
+  const ps = "$p=Get-AppxPackage OpenAI.Codex | Select-Object -First 1; if($p){[pscustomobject]@{Loc=$p.InstallLocation;Sig=[string]$p.SignatureKind}|ConvertTo-Json -Compress}";
   let out;
   try { out = execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { encoding: "utf8" }).trim(); }
   catch { return null; }
@@ -47,6 +49,11 @@ function findWinBundle() {
   return { bundlePath: info.Loc, execPath, bundleId: BUNDLE_ID, signatureKind: info.Sig };
 }
 
+// Store 签名判定(纯函数,便于测试):枚举可能被序列化成字符串 "Store" 或数字 3(PackageSignatureKind.Store)。
+export function isStoreSignature(sig) {
+  return sig === "Store" || sig === 3 || sig === "3";
+}
+
 /* ───────── 跨平台入口 ───────── */
 export function findCodexBundle() {
   return process.platform === "win32" ? findWinBundle() : findMacBundle();
@@ -56,7 +63,7 @@ export function findCodexBundle() {
 export function verifyCodexSignature(bundlePath) {
   if (process.platform === "win32") {
     const info = winAppx();
-    return !!info && info.Sig === "Store";
+    return !!info && isStoreSignature(info.Sig);
   }
   try {
     execFileSync("/usr/bin/codesign", ["--verify", "--deep", "--strict", bundlePath], { stdio: "ignore" });
